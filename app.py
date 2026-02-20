@@ -133,8 +133,8 @@ with st.spinner('⏳ 데이터를 정교하게 재분석 중입니다...'):
             if final_tokens:
                 processed_docs.append(" ".join(final_tokens))
 
-    st.subheader("🕸️ 핵심 키워드 연관성 및 심층 분석")
-    st.caption("선(Edge)이 굵을수록 언론에서 두 단어를 기사 제목에 함께(동시에) 많이 사용했다는 의미입니다.")
+st.subheader("🕸️ 핵심 키워드 연관성 및 심층 분석")
+    st.caption("아래 탭을 클릭하여 시각화 자료를 확인하세요. 각 탭마다 무엇을 중점적으로 봐야 하는지 가이드가 제공됩니다.")
     tab_wordcloud, tab_network, tab_heatmap = st.tabs(["☁️ 워드클라우드", "🌐 연관성 네트워크", "🟪 유사도 히트맵"])
 
     if len(processed_docs) > 5:
@@ -144,6 +144,9 @@ with st.spinner('⏳ 데이터를 정교하게 재분석 중입니다...'):
         corr_matrix = df_dtm.corr().fillna(0)
 
         with tab_wordcloud:
+            # [추가됨] 워드클라우드 가이드
+            st.info("💡 **가이드:** 글자가 클수록 해당 기간 동안 언론이 가장 많이 보도하고 집중한 핵심 주제(키워드)입니다.")
+            
             text_for_wc = " ".join(processed_docs)
             font_path_wc = 'malgun.ttf' if os.path.exists('malgun.ttf') else None 
             wc = WordCloud(width=800, height=350, background_color='white', font_path=font_path_wc, colormap='viridis').generate(text_for_wc)
@@ -153,6 +156,9 @@ with st.spinner('⏳ 데이터를 정교하게 재분석 중입니다...'):
             st.pyplot(fig_wc)
 
         with tab_network:
+            # [추가됨] 네트워크 가이드
+            st.info("💡 **가이드:** 단어를 잇는 선이 굵을수록 두 단어가 기사에 항상 함께 묶여서 보도되는 강력한 '언론 프레임'을 의미합니다.")
+            
             G = nx.Graph()
             words = corr_matrix.columns
             for word in words: G.add_node(word)
@@ -165,23 +171,23 @@ with st.spinner('⏳ 데이터를 정교하게 재분석 중입니다...'):
             fig_net, ax = plt.subplots(figsize=(10, 6))
             pos_net = nx.spring_layout(G, k=0.5, seed=42)
             
-            # [디자인 수정] 동그라미는 연한 보라색, 글자는 진한 검은색으로 변경하여 가독성 극대화
             nx.draw_networkx_nodes(G, pos_net, node_size=2500, node_color='#E8EAF6', edgecolors='#7B68EE', linewidths=2, ax=ax)
             nx.draw_networkx_edges(G, pos_net, width=[G[u][v]['weight']*5 for u,v in G.edges()], edge_color='#BDBDBD', ax=ax)
-            # 글자가 잘 보이도록 font_color를 'black'으로 강제 지정
             nx.draw_networkx_labels(G, pos_net, font_size=13, font_color='black', font_weight='bold', ax=ax)
             
             plt.axis('off')
             st.pyplot(fig_net)
 
         with tab_heatmap:
+            # [추가됨] 히트맵 가이드
+            st.info("💡 **가이드:** 칸의 색이 보라색으로 진하고 숫자(상관계수)가 1에 가까울수록 두 이슈가 통계적으로 매우 밀접하게 얽혀 있음을 뜻합니다.")
+            
             fig_heat = px.imshow(corr_matrix, text_auto=".2f", aspect="auto", color_continuous_scale='Purples')
             fig_heat.update_layout(margin=dict(l=20, r=20, t=20, b=20))
             st.plotly_chart(fig_heat, use_container_width=True)
             
     else:
         st.info("연관성 분석을 수행하기에는 필터링된 데이터가 너무 적습니다. 조건 범위를 넓혀주세요.")
-
 # ---------------------------------------------------------
 # 5. 실시간 AI 팩트체크
 # ---------------------------------------------------------
@@ -307,3 +313,4 @@ if st.button("🔍 팩트체크 시작"):
                     f"**📌 상식적 해석:** {social_guide}")
     else:
         st.warning("기사를 선택하거나 입력해주세요.")
+

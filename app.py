@@ -202,29 +202,67 @@ with tab1:
             url_col = 'URL'
         elif '기사 URL' in top_articles.columns: 
             url_col = '기사 URL'
+            
+        # --- 💡 [핵심 업데이트] 50개 기사를 AI가 미리 고속 분석하여 태그 달기 ---
+        titles_for_ai = top_articles['제목'].astype(str).tolist()
+        batch_results = classifier(titles_for_ai) # 50개를 한 번에 분석
+        
+        # 분석 결과를 바탕으로 카테고리 분류
+        def assign_category(res):
+            label = "긍정" if res['label'] == 'LABEL_1' else "부정"
+            score = res['score'] * 100
+            if score >= 90:
+                return "🚨 편향도 90% 이상"
+            elif label == "긍정":
+                return "✅ 긍정"
+            else:
+                return "⚠️ 부정"
+                
+        top_articles['ai_category'] = [assign_category(res) for res in batch_results]
+        
+        # UI: 사용자가 원하는 카테고리만 쏙쏙 골라볼 수 있는 필터 버튼
+        st.caption("✨ AI가 최신 기사 50건의 논조를 미리 분석하여 분류했습니다. 원하는 유형을 선택해보세요.")
+        selected_filter = st.radio(
+            "기사 분류 필터",
+            ["전체 보기", "✅ 긍정", "⚠️ 부정", "🚨 편향도 90% 이상"],
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+        
+        # 선택한 필터에 맞게 목록 추리기
+        if selected_filter != "전체 보기":
+            display_articles = top_articles[top_articles['ai_category'] == selected_filter]
+        else:
+            display_articles = top_articles
         
         display_dict = {}
-        for _, row in top_articles.iterrows():
+        for _, row in display_articles.iterrows():
             date_str = row['일자'].strftime('%Y-%m-%d')
             publisher_str = row['언론사'] if has_publisher else "알수없음"
             title_str = str(row['제목'])
-            
             url_str = str(row[url_col]) if url_col and pd.notna(row[url_col]) else ""
             
-            display_text = f"[{date_str}] ({publisher_str}) {title_str}"
+            # 드롭다운에 표시될 텍스트 (앞에 분류 태그가 붙습니다)
+            category_tag = row['ai_category']
+            display_text = f"[{category_tag}] [{date_str}] ({publisher_str}) {title_str}"
+            
             display_dict[display_text] = {
                 "title": title_str,
                 "url": url_str
             }
         
-        selected_option = st.selectbox(
-            "검증할 기사를 선택하세요 (최신순 50건):", 
-            list(display_dict.keys())
-        )
-        
-        if selected_option: 
-            target_article = display_dict[selected_option]["title"]
-            target_url = display_dict[selected_option]["url"] 
+        # 필터링된 결과가 있을 때만 드롭다운 표시
+        if display_dict:
+            selected_option = st.selectbox(
+                f"검증할 기사를 선택하세요 ({len(display_dict)}건):", 
+                list(display_dict.keys())
+            )
+            if selected_option: 
+                target_article = display_dict[selected_option]["title"]
+                target_url = display_dict[selected_option]["url"] 
+        else:
+            st.info("해당 조건에 맞는 기사가 없습니다. 다른 분류를 선택해 보세요.")
+            
     else:
         st.warning("조건에 맞는 기사가 없습니다.")
 

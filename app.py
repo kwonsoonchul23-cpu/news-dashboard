@@ -199,7 +199,7 @@ target_url = ""
 
 with tab1:
     if not global_df_filtered.empty:
-        top_articles = global_df_filtered.sort_values(by='일자', ascending=False).head(50)
+        top_articles = global_df_filtered.sort_values(by='일자', ascending=False).head(15)
         has_publisher = '언론사' in top_articles.columns
         
         url_col = None
@@ -312,6 +312,7 @@ if st.button("🔍 팩트체크 시작"):
                     f"**📌 상식적 해석:** {social_guide}")
     else:
         st.warning("기사를 선택하거나 입력해주세요.")
+
 
 
 

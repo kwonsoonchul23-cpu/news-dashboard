@@ -133,7 +133,7 @@ with st.spinner('⏳ 데이터를 정교하게 재분석 중입니다...'):
             if final_tokens:
                 processed_docs.append(" ".join(final_tokens))
 
-st.subheader("🕸️ 핵심 키워드 연관성 및 심층 분석")
+    st.subheader("🕸️ 핵심 키워드 연관성 및 심층 분석")
     st.caption("아래 탭을 클릭하여 시각화 자료를 확인하세요. 각 탭마다 무엇을 중점적으로 봐야 하는지 가이드가 제공됩니다.")
     tab_wordcloud, tab_network, tab_heatmap = st.tabs(["☁️ 워드클라우드", "🌐 연관성 네트워크", "🟪 유사도 히트맵"])
 
@@ -144,9 +144,7 @@ st.subheader("🕸️ 핵심 키워드 연관성 및 심층 분석")
         corr_matrix = df_dtm.corr().fillna(0)
 
         with tab_wordcloud:
-            # [추가됨] 워드클라우드 가이드
             st.info("💡 **가이드:** 글자가 클수록 해당 기간 동안 언론이 가장 많이 보도하고 집중한 핵심 주제(키워드)입니다.")
-            
             text_for_wc = " ".join(processed_docs)
             font_path_wc = 'malgun.ttf' if os.path.exists('malgun.ttf') else None 
             wc = WordCloud(width=800, height=350, background_color='white', font_path=font_path_wc, colormap='viridis').generate(text_for_wc)
@@ -156,9 +154,7 @@ st.subheader("🕸️ 핵심 키워드 연관성 및 심층 분석")
             st.pyplot(fig_wc)
 
         with tab_network:
-            # [추가됨] 네트워크 가이드
             st.info("💡 **가이드:** 단어를 잇는 선이 굵을수록 두 단어가 기사에 항상 함께 묶여서 보도되는 강력한 '언론 프레임'을 의미합니다.")
-            
             G = nx.Graph()
             words = corr_matrix.columns
             for word in words: G.add_node(word)
@@ -179,9 +175,7 @@ st.subheader("🕸️ 핵심 키워드 연관성 및 심층 분석")
             st.pyplot(fig_net)
 
         with tab_heatmap:
-            # [추가됨] 히트맵 가이드
             st.info("💡 **가이드:** 칸의 색이 보라색으로 진하고 숫자(상관계수)가 1에 가까울수록 두 이슈가 통계적으로 매우 밀접하게 얽혀 있음을 뜻합니다.")
-            
             fig_heat = px.imshow(corr_matrix, text_auto=".2f", aspect="auto", color_continuous_scale='Purples')
             fig_heat.update_layout(margin=dict(l=20, r=20, t=20, b=20))
             st.plotly_chart(fig_heat, use_container_width=True)
@@ -313,4 +307,5 @@ if st.button("🔍 팩트체크 시작"):
                     f"**📌 상식적 해석:** {social_guide}")
     else:
         st.warning("기사를 선택하거나 입력해주세요.")
+
 

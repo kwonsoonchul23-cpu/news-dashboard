@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm # 폰트 강제 적용을 위해 추가
+import matplotlib.font_manager as fm 
 from wordcloud import WordCloud
 from transformers import pipeline
 import os
@@ -13,17 +13,20 @@ import plotly.express as px
 from sklearn.feature_extraction.text import CountVectorizer
 
 # ---------------------------------------------------------
-# 1. 기본 설정 및 폰트 세팅 (클라우드 환경 폰트 에러 완벽 해결)
+# 1. 기본 설정 및 폰트 세팅 (클라우드 환경 폰트 에러 완벽 방어)
 # ---------------------------------------------------------
 st.set_page_config(page_title="AI 탐사보도 시스템 (최종 고도화)", layout="wide")
 
-# 폴더에 올린 malgun.ttf를 그래프 폰트로 강제 주입합니다.
+# 💡 [핵심 수정] 폰트 대소문자 차이까지 잡아내어 전역 변수로 저장
+global_font_name = 'Malgun Gothic'
 if os.path.exists('malgun.ttf'):
     fm.fontManager.addfont('malgun.ttf')
-    plt.rcParams['font.family'] = fm.FontProperties(fname='malgun.ttf').get_name()
-else:
-    plt.rcParams['font.family'] = 'Malgun Gothic'
-    
+    global_font_name = fm.FontProperties(fname='malgun.ttf').get_name()
+elif os.path.exists('Malgun.ttf'):
+    fm.fontManager.addfont('Malgun.ttf')
+    global_font_name = fm.FontProperties(fname='Malgun.ttf').get_name()
+
+plt.rcParams['font.family'] = global_font_name
 plt.rcParams['axes.unicode_minus'] = False
 
 st.markdown("""
@@ -79,7 +82,6 @@ stopword_list = [word.strip() for word in user_stopwords.split(',')]
 st.sidebar.markdown("---")
 st.sidebar.subheader("⚙️ 네트워크 & 워드클라우드 설정")
 
-# [추가된 부분] 핵심 단어 수 & 최소 단어 길이 가이드
 st.sidebar.caption("💡 **핵심 단어 수:** 늘리면 다양한 이슈를 볼 수 있지만 그래프가 복잡해집니다. 줄이면 가장 중요한 핵심 프레임만 뚜렷하게 볼 수 있습니다.")
 max_words = st.sidebar.slider("분석할 핵심 단어 수", 5, 20, 10)
 
@@ -151,7 +153,7 @@ with st.spinner('⏳ 데이터를 정교하게 재분석 중입니다...'):
         with tab_wordcloud:
             st.info("💡 **가이드:** 글자가 클수록 해당 기간 동안 언론이 가장 많이 보도하고 집중한 핵심 주제(키워드)입니다.")
             text_for_wc = " ".join(processed_docs)
-            font_path_wc = 'malgun.ttf' if os.path.exists('malgun.ttf') else None 
+            font_path_wc = 'malgun.ttf' if os.path.exists('malgun.ttf') else ('Malgun.ttf' if os.path.exists('Malgun.ttf') else None)
             wc = WordCloud(width=800, height=350, background_color='white', font_path=font_path_wc, colormap='viridis').generate(text_for_wc)
             fig_wc, ax = plt.subplots(figsize=(10, 4))
             ax.imshow(wc, interpolation='bilinear')
@@ -174,7 +176,9 @@ with st.spinner('⏳ 데이터를 정교하게 재분석 중입니다...'):
             
             nx.draw_networkx_nodes(G, pos_net, node_size=2500, node_color='#E8EAF6', edgecolors='#7B68EE', linewidths=2, ax=ax)
             nx.draw_networkx_edges(G, pos_net, width=[G[u][v]['weight']*5 for u,v in G.edges()], edge_color='#BDBDBD', ax=ax)
-            nx.draw_networkx_labels(G, pos_net, font_size=13, font_color='black', font_weight='bold', ax=ax)
+            
+            # 💡 [핵심 수정] 네트워크 라벨을 그릴 때 앞서 구한 global_font_name을 강제로 주입!
+            nx.draw_networkx_labels(G, pos_net, font_size=13, font_family=global_font_name, font_color='black', font_weight='bold', ax=ax)
             
             plt.axis('off')
             st.pyplot(fig_net)
@@ -187,6 +191,7 @@ with st.spinner('⏳ 데이터를 정교하게 재분석 중입니다...'):
             
     else:
         st.info("연관성 분석을 수행하기에는 필터링된 데이터가 너무 적습니다. 조건 범위를 넓혀주세요.")
+
 # ---------------------------------------------------------
 # 5. 실시간 AI 팩트체크
 # ---------------------------------------------------------
@@ -208,11 +213,9 @@ with tab1:
         elif '기사 URL' in top_articles.columns: 
             url_col = '기사 URL'
             
-        # --- 💡 [핵심 업데이트] 50개 기사를 AI가 미리 고속 분석하여 태그 달기 ---
         titles_for_ai = top_articles['제목'].astype(str).tolist()
-        batch_results = classifier(titles_for_ai) # 50개를 한 번에 분석
+        batch_results = classifier(titles_for_ai) 
         
-        # 분석 결과를 바탕으로 카테고리 분류
         def assign_category(res):
             label = "긍정" if res['label'] == 'LABEL_1' else "부정"
             score = res['score'] * 100
@@ -225,7 +228,6 @@ with tab1:
                 
         top_articles['ai_category'] = [assign_category(res) for res in batch_results]
         
-        # UI: 사용자가 원하는 카테고리만 쏙쏙 골라볼 수 있는 필터 버튼
         st.caption("✨ AI가 최신 기사 15건의 논조를 미리 분석하여 분류했습니다. 원하는 유형을 선택해보세요.")
         selected_filter = st.radio(
             "기사 분류 필터",
@@ -234,7 +236,6 @@ with tab1:
             label_visibility="collapsed"
         )
         
-        # 선택한 필터에 맞게 목록 추리기
         if selected_filter != "전체 보기":
             display_articles = top_articles[top_articles['ai_category'] == selected_filter]
         else:
@@ -247,7 +248,6 @@ with tab1:
             title_str = str(row['제목'])
             url_str = str(row[url_col]) if url_col and pd.notna(row[url_col]) else ""
             
-            # 드롭다운에 표시될 텍스트 (앞에 분류 태그가 붙습니다)
             category_tag = row['ai_category']
             display_text = f"[{category_tag}] [{date_str}] ({publisher_str}) {title_str}"
             
@@ -256,7 +256,6 @@ with tab1:
                 "url": url_str
             }
         
-        # 필터링된 결과가 있을 때만 드롭다운 표시
         if display_dict:
             selected_option = st.selectbox(
                 f"검증할 기사를 선택하세요 ({len(display_dict)}건):", 
@@ -312,8 +311,3 @@ if st.button("🔍 팩트체크 시작"):
                     f"**📌 상식적 해석:** {social_guide}")
     else:
         st.warning("기사를 선택하거나 입력해주세요.")
-
-
-
-
-

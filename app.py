@@ -226,7 +226,7 @@ with tab1:
         top_articles['ai_category'] = [assign_category(res) for res in batch_results]
         
         # UI: 사용자가 원하는 카테고리만 쏙쏙 골라볼 수 있는 필터 버튼
-        st.caption("✨ AI가 최신 기사 50건의 논조를 미리 분석하여 분류했습니다. 원하는 유형을 선택해보세요.")
+        st.caption("✨ AI가 최신 기사 15건의 논조를 미리 분석하여 분류했습니다. 원하는 유형을 선택해보세요.")
         selected_filter = st.radio(
             "기사 분류 필터",
             ["전체 보기", "✅ 긍정", "⚠️ 부정", "🚨 편향도 90% 이상"],
@@ -312,6 +312,7 @@ if st.button("🔍 팩트체크 시작"):
                     f"**📌 상식적 해석:** {social_guide}")
     else:
         st.warning("기사를 선택하거나 입력해주세요.")
+
 
 
 

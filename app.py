@@ -45,7 +45,12 @@ def load_data():
     try:
         df = pd.read_excel("news_result_final.xlsx")
         if '일자' in df.columns:
-            df['일자'] = pd.to_datetime(df['일자'].astype(str).str[:8], errors='coerce')
+            # 💡 [핵심 수정] 마침표(.)나 하이픈(-) 등 기호를 모두 제거하고 
+            # 순수 숫자 8자리(YYYYMMDD)만 추출하여 날짜로 강제 변환하는 만능 코드
+            df['일자'] = df['일자'].astype(str).str.replace(r'[^0-9]', '', regex=True).str[:8]
+            df['일자'] = pd.to_datetime(df['일자'], format='%Y%m%d', errors='coerce')
+            
+            # 변환 실패한 쓰레기 데이터만 버림
             df = df.dropna(subset=['일자'])
         return df
     except Exception as e:
@@ -57,7 +62,6 @@ def load_model():
 
 df = load_data()
 classifier = load_model()
-
 # ---------------------------------------------------------
 # 3. 사이드바 (친절한 설명 및 UI 개선)
 # ---------------------------------------------------------
@@ -311,3 +315,4 @@ if st.button("🔍 팩트체크 시작"):
                     f"**📌 상식적 해석:** {social_guide}")
     else:
         st.warning("기사를 선택하거나 입력해주세요.")
+
